@@ -201,7 +201,7 @@ class _Options:
     api_key: str
     service: str
     environment: str
-    endpoint: str = "http://localhost:3001"
+    endpoint: str = "https://ingest.loggify.cloud"
     sample_rate: float = 1.0
     flush_interval_ms: int = 2000
     max_buffer: int = 500
@@ -290,7 +290,7 @@ class Monitor:
             api_key=key,
             service=svc,
             environment=env,
-            endpoint=(endpoint or extra.get("endpoint") or "http://localhost:3001").rstrip("/"),
+            endpoint=(endpoint or extra.get("endpoint") or "https://ingest.loggify.cloud").rstrip("/"),
             sample_rate=sample_rate,
             flush_interval_ms=flush_interval_ms,
             max_buffer=max_buffer,

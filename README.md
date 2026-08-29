@@ -12,7 +12,7 @@ Monitor.init(
     api_key=os.environ["LOGGIFY_KEY"],
     service="orders-api",
     environment="production",
-    endpoint=os.environ.get("LOGGIFY_ENDPOINT", "http://localhost:3001"),
+    endpoint=os.environ.get("LOGGIFY_ENDPOINT", "https://ingest.loggify.cloud"),
 )
 ```
 
