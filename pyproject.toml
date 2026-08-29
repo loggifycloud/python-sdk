@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "loggify"
+version = "0.1.0"
+description = "Loggify Python monitoring SDK"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Loggify" }]
+
+[tool.setuptools.packages.find]
+include = ["loggify*"]
