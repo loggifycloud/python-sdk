@@ -3,10 +3,12 @@ from __future__ import annotations
 import atexit
 import json
 import logging
+import os
 import random
 import re
 import resource
 import secrets
+import socket
 import sys
 import threading
 import time
@@ -40,6 +42,20 @@ def _clip(value: str | None, max_len: int = 512) -> str:
     if not value:
         return ""
     return value if len(value) <= max_len else value[:max_len]
+
+
+def _resolve_hostname(override: str | None = None) -> str:
+    trimmed = (override or "").strip()
+    if trimmed:
+        return trimmed[:255]
+    env = os.environ.get("HOSTNAME", "").strip()
+    if env:
+        return env[:255]
+    try:
+        host = socket.gethostname().strip()
+        return host[:255] if host else ""
+    except Exception:
+        return ""
 
 
 def _hex(n: int) -> str:
@@ -207,6 +223,7 @@ class _Options:
     max_buffer: int = 500
     timeout_ms: int = 1500
     capture_logging: bool = True
+    hostname: str = ""
 
 
 class _Buffer:
@@ -296,6 +313,7 @@ class Monitor:
             max_buffer=max_buffer,
             timeout_ms=timeout_ms,
             capture_logging=capture_logging if "captureLogging" not in extra else extra["captureLogging"],
+            hostname=_resolve_hostname(extra.get("hostname")),
         )
         for buf in (cls._http_buf, cls._error_buf, cls._metric_buf, cls._span_buf):
             buf.max = max_buffer
@@ -607,14 +625,33 @@ class Monitor:
         cls._runtime_timer.start()
 
     @classmethod
+    def _runtime_tags(cls) -> dict[str, str]:
+        tags = {"pid": str(os.getpid())}
+        if cls._opts and cls._opts.hostname:
+            tags["hostname"] = cls._opts.hostname
+        return tags
+
+    @classmethod
+    def _push_metric(cls, name: str, value: float) -> None:
+        event: dict[str, Any] = {
+            "metricName": name,
+            "value": value,
+            "tags": cls._runtime_tags(),
+        }
+        if cls._opts:
+            event["serviceName"] = cls._opts.service
+            event["environment"] = cls._opts.environment
+        cls._metric_buf.push(event)
+
+    @classmethod
     def _collect_runtime(cls) -> None:
         try:
             usage = resource.getrusage(resource.RUSAGE_SELF)
             rss = float(usage.ru_maxrss)
             if sys.platform != "darwin":
                 rss *= 1024.0
-            cls._metric_buf.push({"metricName": "memory_usage", "value": rss / 1024.0 / 1024.0})
-            cls._metric_buf.push({"metricName": "process_uptime", "value": time.time() - cls._started_at})
+            cls._push_metric("memory_usage", rss / 1024.0 / 1024.0)
+            cls._push_metric("process_uptime", time.time() - cls._started_at)
         except Exception:
             pass
 
