@@ -53,9 +53,9 @@ def _resolve_hostname(override: str | None = None) -> str:
         return env[:255]
     try:
         host = socket.gethostname().strip()
-        return host[:255] if host else ""
+        return host[:255] if host else "localhost"
     except Exception:
-        return ""
+        return "localhost"
 
 
 def _hex(n: int) -> str:
